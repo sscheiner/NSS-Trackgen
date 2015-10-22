@@ -1,0 +1,69 @@
+# Sam Scheiner 7/28/15 NSS track plugin script generator 1.2
+# returns list of random coordinates between initial and final coordinates in lat long NSS compatible format
+#Use NSS random function rand_real() to generate random numbers when importing into NSS, rand() when testing in Perl
+
+
+use 5.14.1;
+use strict;
+use warnings;
+
+#####example starting and ending points
+
+
+initial_track();
+
+sub initial_track{
+
+my($self,$region)=@_;
+my $initialPointLon = -149.99;			#hardcoded lat/lon  example
+my $initialPointLat =  61.17;
+my $endPointLon = -76.66;
+my $endPointLat = 39.17; 
+my $intervals = 10;
+my $maxRandOffset = 30;
+my $speed = 5.0; 		
+my $horizOffset = 0.0;
+my $verOffset = 0.0;
+my $incrCounter = 1;
+my $randX = 0;
+my $randY  = 0;
+my $finalLon = 0.0;
+my $finalLat = 0.0;
+my @resultArr;
+########0return(\@points, [["PATROL",0]]);
+
+$horizOffset = $endPointLon - $initialPointLon;
+$verOffset = $endPointLat - $initialPointLat;
+
+#the algorithm works by taking the delta x and delta y, then placing points along the line fractions of delta x/y at a time and palcing reference points at these intervals. A random offset is then added to these points 
+
+### draw initial line based off initial and final point data
+
+	my @points; 
+	push @points, [$initialPointLat, $initialPointLon, 0, $speed, 0];
+
+	while($incrCounter < $intervals) #generate reference points at defined intervals
+	{
+		$randX = Utilities::rand_real() * $maxRandOffset;
+		$randX = $randX - ($maxRandOffset/2);		#subtract half of absolute value 
+		$randY = Utilities::rand_real() * $maxRandOffset;
+		$randY = $randY - ($maxRandOffset/2); 
+		
+		$finalLon = ($initialPointLon + $incrCounter * ($horizOffset/($intervals)) ) + (cos($initialPointLat)/60);
+		$finalLat = ($initialPointLat + $incrCounter * ($verOffset/($intervals)) ) + ($randX/60);
+
+		@resultArr = [$finalLat, $finalLon, 0, $speed, 0];
+		push @points, @resultArr;
+		$incrCounter++;
+	}
+
+	push @points, [$endPointLat, $endPointLon, 0 , $speed, 0];
+
+	foreach my $group ( @points ) { 
+			print join (",", @$group ),"\n"; 
+		}
+	
+	print "Done\n";
+	return(\@points, [["PATROL",0]]);
+
+}
